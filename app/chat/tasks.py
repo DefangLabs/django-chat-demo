@@ -1,3 +1,4 @@
+import os
 from celery import shared_task
 from django.utils import timezone
 from textblob import TextBlob
@@ -6,11 +7,12 @@ import nltk
 from .models import Room, Message
 
 # Download required NLTK data
-try:
-    nltk.data.find('tokenizers/punkt')
-    nltk.data.find('averaged_perceptron_tagger')
-except LookupError:
-    nltk.download('punkt')
+if os.getenv('WORKER') == '1':
+    try:
+        nltk.data.find('tokenizers/punkt')
+        nltk.data.find('averaged_perceptron_tagger')
+    except LookupError:
+        nltk.download('punkt')
     nltk.download('averaged_perceptron_tagger')
 
 @shared_task

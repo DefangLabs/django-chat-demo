@@ -1,54 +1,49 @@
 services:
   web:
+    extends:
+      file: compose.yaml
+      service: web
+    restart: unless-stopped
     build:
-      context: .
       dockerfile: Dockerfile.dev
     environment:
-      - DJANGO_SETTINGS_MODULE=chat_project.settings
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/chat_db
-      - REDIS_URL=redis://redis:6379/0
       - DEBUG=1
     volumes:
-      - .:/app
-    depends_on:
-      - db
-      - redis
-    ports:
-      - "8000:8000"
+      - ./app:/app
     command: python manage.py runserver 0.0.0.0:8000
 
-  db:
-    image: postgres:15
-    volumes:
-      - postgres_data_dev:/var/lib/postgresql/data
+  worker:
+    extends:
+      file: compose.yaml
+      service: worker
+    restart: unless-stopped
+    build:
+      dockerfile: Dockerfile.dev
     environment:
-      - POSTGRES_DB=chat_db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - DEBUG=1
+    volumes:
+      - ./app:/app
+
+  db:
+    extends:
+      file: compose.yaml
+      service: db
+    restart: unless-stopped
+    volumes:
+      - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
-  redis:
-    image: redis:7
+  broker:
+    extends:
+      file: compose.yaml
+      service: broker
+    restart: unless-stopped
     ports:
       - "6379:6379"
-
-  celery_worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    environment:
-      - DJANGO_SETTINGS_MODULE=chat_project.settings
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/chat_db
-      - REDIS_URL=redis://redis:6379/0
-      - DEBUG=1
     volumes:
-      - .:/app
-    depends_on:
-      - web
-      - redis
-      - db
-    command: celery -A chat_project worker --loglevel=info
+      - broker_data:/data
 
 volumes:
-  postgres_data_dev:
+  db_data:
+  broker_data:
