@@ -1,0 +1,49 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block object-tools %}
+    <div class="statistics-dashboard" style="margin-bottom: 20px; padding: 20px; background: white; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            {# Total Messages #}
+            <div class="stat-box" style="background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center;">
+                <h4 style="margin: 0; color: #6c757d;">Total Messages</h4>
+                <p style="font-size: 24px; margin: 10px 0;">
+                    {{ cl.result_count }}
+                </p>
+            </div>
+
+            {# Flagged Messages #}
+            <div class="stat-box" style="background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center;">
+                <h4 style="margin: 0; color: #d9534f;">Flagged Messages</h4>
+                <p style="font-size: 24px; margin: 10px 0; color: #d9534f;">
+                    {{ flagged_count }}
+                </p>
+            </div>
+
+            {# Pending Review #}
+            <div class="stat-box" style="background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center;">
+                <h4 style="margin: 0; color: #f0ad4e;">Pending Review</h4>
+                <p style="font-size: 24px; margin: 10px 0; color: #f0ad4e;">
+                    {{ pending_count }}
+                </p>
+            </div>
+
+            {# Messages Today #}
+            <div class="stat-box" style="background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center;">
+                <h4 style="margin: 0; color: #5bc0de;">Messages Today</h4>
+                <p style="font-size: 24px; margin: 10px 0; color: #5bc0de;">
+                    {{ today_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}
+
+{% block content_title %}
+    <h1>Message Moderation</h1>
+{% endblock %}
+
+{% block result_list %}
+    {{ block.super }}
+{% endblock %}
