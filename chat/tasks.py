@@ -37,7 +37,7 @@ def moderate_message_content(message_id):
         }
 
         # Flag negative content (more sensitive for kids)
-        if sentiment.polarity < -0.35 and sentiment.subjectivity > 0.5:
+        if sentiment.polarity < -0.1 and sentiment.subjectivity > 0.5:
             moderation_notes['negative_content'] = True
             message.is_flagged = True
             moderation_notes['flag_reason'] = 'Potentially negative or unfriendly message'
