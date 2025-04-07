@@ -6,6 +6,6 @@ python-dotenv==1.0.0
 daphne==4.0.0
 celery==5.3.6
 redis==5.0.1
-nltk==3.8.1
+nltk==3.9.1
 better-profanity==0.7.0
 textblob==0.17.1
