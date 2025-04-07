@@ -1,0 +1,54 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - DJANGO_SETTINGS_MODULE=chat_project.settings
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/chat_db
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=1
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    command: python manage.py runserver 0.0.0.0:8000
+
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chat_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - DJANGO_SETTINGS_MODULE=chat_project.settings
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/chat_db
+      - REDIS_URL=redis://redis:6379/0
+      - DEBUG=1
+    volumes:
+      - .:/app
+    depends_on:
+      - web
+      - redis
+      - db
+    command: celery -A chat_project worker --loglevel=info
+
+volumes:
+  postgres_data_dev:

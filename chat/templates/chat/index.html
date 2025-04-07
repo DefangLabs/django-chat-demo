@@ -1,0 +1,30 @@
+{% extends 'chat/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h2 class="mb-4">Available Chat Rooms</h2>
+        <div class="list-group mb-4">
+            {% for room in rooms %}
+                <a href="{% url 'room' room.name|slugify %}" class="list-group-item list-group-item-action">
+                    {{ room.name }}
+                    <small class="text-muted">({{ room.messages.count }} messages)</small>
+                </a>
+            {% empty %}
+                <div class="list-group-item">No rooms available.</div>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Create or Join a Room</h5>
+                <form class="d-flex" method="POST" action="{% url 'create_room' %}">
+                    {% csrf_token %}
+                    <input type="text" name="room_name" class="form-control me-2" placeholder="Enter room name" required>
+                    <button type="submit" class="btn btn-primary">Create Room</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

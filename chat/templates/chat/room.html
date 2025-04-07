@@ -1,0 +1,153 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}{{ room.name }} - Chat Room{% endblock %}
+
+{% block extra_css %}
+<style>
+    .message.flagged {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+    }
+    .message .alert {
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+    .message .btn-link {
+        padding: 0;
+        font-size: 0.875rem;
+        margin-left: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h2 class="mb-4">Chat Room: {{ room.name }}</h2>
+        <div class="chat-messages" id="chat-messages">
+            {% for message in messages %}
+            <div class="message" id="message-{{ message.id }}" {% if message.is_flagged %}style="display: none;"{% endif %}>
+                <span class="message-user">{{ message.user.username }}</span>
+                <span class="message-time">{{ message.created_at|date:'H:i' }}</span>
+                <div class="message-content">{{ message.content }}</div>
+                {% if message.is_flagged %}
+                <div class="alert alert-warning mt-1">
+                    <small>This message has been flagged for review.</small>
+                    {% if message.moderation_notes %}
+                    <button type="button" class="btn btn-sm btn-link" onclick="showModerationDetails('{{ message.id }}')">
+                        View Details
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <form id="chat-form" class="mb-4">
+            <div class="input-group">
+                <input type="text" id="chat-message-input" class="form-control" placeholder="Type your message...">
+                <button type="submit" class="btn btn-primary">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const roomName = '{{ room.name|slugify }}';
+    const username = '{{ user.username }}';
+    const wsScheme = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    console.log('Connecting to WebSocket...');
+    const chatSocket = new WebSocket(
+        wsScheme + window.location.host + '/ws/chat/' + roomName + '/'
+    );
+    console.log('WebSocket URL:', wsScheme + window.location.host + '/ws/chat/' + roomName + '/');
+    
+    // Add connection error handling
+    chatSocket.onerror = function(e) {
+        console.error('WebSocket error:', e);
+    };
+    
+    chatSocket.onopen = function(e) {
+        console.log('WebSocket connection established');
+    };
+
+    const messagesDiv = document.querySelector('#chat-messages');
+    const messageInput = document.querySelector('#chat-message-input');
+    const chatForm = document.querySelector('#chat-form');
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        
+        if (data.type === 'message') {
+            // Create new message element
+            const messageHtml = `
+                <div class="message" id="message-${data.message_id}">
+                    <span class="message-user">${data.username}</span>
+                    <span class="message-time">${new Date(data.timestamp).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})}</span>
+                    <div class="message-content">${data.message}</div>
+                </div>
+            `;
+            messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        } 
+        else if (data.type === 'moderation') {
+            // Handle moderation update
+            const messageDiv = document.querySelector(`#message-${data.message_id}`);
+            if (messageDiv && data.status === 'flagged') {
+                // Add warning message
+                const warningHtml = `
+                    <div class="alert alert-warning mt-1">
+                        <small>${data.notes.flag_reason || 'This message has been flagged for review.'}</small>
+                        <button type="button" class="btn btn-sm btn-link" onclick="showModerationDetails('${data.message_id}')">
+                            View Details
+                        </button>
+                    </div>
+                `;
+                messageDiv.insertAdjacentHTML('beforeend', warningHtml);
+                
+                // Store moderation notes for later use
+                messageDiv.dataset.moderationNotes = JSON.stringify(data.notes);
+            }
+        }
+    };
+    
+    // Function to show moderation details
+    window.showModerationDetails = function(messageId) {
+        const messageDiv = document.querySelector(`#message-${messageId}`);
+        const notes = JSON.parse(messageDiv.dataset.moderationNotes || '{}');
+        
+        let details = 'Moderation Details:\n';
+        if (notes.profanity) details += '- Contains inappropriate language\n';
+        if (notes.negative_content) details += '- Contains negative content\n';
+        if (notes.sentiment) {
+            details += `- Sentiment: ${Math.round(notes.sentiment.polarity * 100)}% positive\n`;
+            details += `- Subjectivity: ${Math.round(notes.sentiment.subjectivity * 100)}% subjective`;
+        }
+        
+        alert(details);
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = messageInput.value;
+        if (message) {
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'username': username
+            }));
+            messageInput.value = '';
+        }
+    });
+
+    // Auto-scroll to bottom on page load
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+</script>
+{% endblock %}

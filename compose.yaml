@@ -1,0 +1,51 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - DJANGO_SETTINGS_MODULE=chat_project.settings
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/chat_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    command: daphne -b 0.0.0.0 -p 8000 chat_project.asgi:application
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - DJANGO_SETTINGS_MODULE=chat_project.settings
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/chat_db
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - web
+      - redis
+      - db
+    command: celery -A chat_project worker --loglevel=info
+
+  db:
+    image: postgres:15
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=chat_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  redis:
+    image: redis:7
+    restart: always
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
