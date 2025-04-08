@@ -58,6 +58,22 @@ services:
     volumes:
       - broker_data:/data
 
+  createsuperuser:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    restart: on-failure
+    environment:
+      - DJANGO_SETTINGS_MODULE=chat_project.settings
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+      - DJANGO_SECRET_KEY
+      - DEBUG=1
+    volumes:
+      - ./app:/app
+    depends_on:
+      - migrate
+    command: python manage.py createsuperauto
+
 volumes:
   db_data:
   broker_data:
