@@ -27,20 +27,10 @@
         <h2 class="mb-4">Chat Room: {{ room.name }}</h2>
         <div class="chat-messages" id="chat-messages">
             {% for message in messages %}
-            <div class="message" id="message-{{ message.id }}" {% if message.is_flagged %}style="display: none;"{% endif %}>
+            <div class="message" id="message-{{ message.id }}">
                 <span class="message-user">{{ message.user.username }}</span>
                 <span class="message-time">{{ message.created_at|date:'H:i' }}</span>
                 <div class="message-content">{{ message.content }}</div>
-                {% if message.is_flagged %}
-                <div class="alert alert-warning mt-1">
-                    <small>This message has been flagged for review.</small>
-                    {% if message.moderation_notes %}
-                    <button type="button" class="btn btn-sm btn-link" onclick="showModerationDetails('{{ message.id }}')">
-                        View Details
-                    </button>
-                    {% endif %}
-                </div>
-                {% endif %}
             </div>
             {% endfor %}
         </div>
@@ -98,6 +88,9 @@
             // Handle moderation update
             const messageDiv = document.querySelector(`#message-${data.message_id}`);
             if (messageDiv && data.status === 'flagged') {
+                // remove message content
+                messageDiv.querySelector('.message-content').remove();
+
                 // Add warning message
                 const warningHtml = `
                     <div class="alert alert-warning mt-1">

@@ -6,14 +6,21 @@ services:
     restart: always
     environment:
       - DJANGO_SETTINGS_MODULE=chat_project.settings
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/chat_db
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
       - REDIS_URL=redis://broker:6379/0
+      - DJANGO_SECRET_KEY
     depends_on:
       - db
       - broker
     ports:
       - "8000:8000"
-    command: daphne -b 0.0.0.0 -p 8000 chat_project.asgi:application
+    command: /app/scripts/start.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   worker:
     build:
@@ -22,8 +29,9 @@ services:
     restart: always
     environment:
       - DJANGO_SETTINGS_MODULE=chat_project.settings
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/chat_db
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
       - REDIS_URL=redis://broker:6379/0
+      - DJANGO_SECRET_KEY
       - WORKER=1
     depends_on:
       - web
@@ -35,11 +43,19 @@ services:
     image: postgres:15
     restart: always
     x-defang-postgres: true
+    ports:
+      - mode: host
+        target: 5432
+        published: 5432
     environment:
       - POSTGRES_PASSWORD
 
   broker:
-    image: redis:7
+    image: redis:6.2
     restart: always
     x-defang-redis: true
+    ports:
+      - mode: host
+        target: 6379
+        published: 6379
 

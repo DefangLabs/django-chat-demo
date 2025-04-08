@@ -56,24 +56,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # Start moderation in background
         from .tasks import moderate_message_content
-        result = moderate_message_content.delay(message_obj.id)
-        
-        # Wait for moderation result (with timeout)
-        try:
-            moderation_result = result.get(timeout=2)  # 2 second timeout
-            if moderation_result.get('is_flagged', False):
-                # Send moderation result to room group
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'moderation_update',
-                        'message_id': message_obj.id,
-                        'status': 'flagged',
-                        'notes': moderation_result.get('notes', {})
-                    }
-                )
-        except Exception as e:
-            print(f'Error getting moderation result: {e}')
+        moderate_message_content.delay(message_obj.id)
 
     async def chat_message(self, event):
         # Send message to WebSocket
@@ -86,6 +69,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }))
 
     async def moderation_update(self, event):
+        print(f"Moderation update received: {event}")
         # Send moderation update to WebSocket
         await self.send(text_data=json.dumps({
             'type': 'moderation',

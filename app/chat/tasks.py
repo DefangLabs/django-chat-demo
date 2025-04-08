@@ -5,6 +5,10 @@ from textblob import TextBlob
 from better_profanity import profanity
 import nltk
 from .models import Room, Message
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.utils.text import slugify
+
 
 # Download required NLTK data
 if os.getenv('WORKER') == '1':
@@ -55,12 +59,28 @@ def moderate_message_content(message_id):
         message.moderated_at = timezone.now()
         message.save()
 
-        return {
+        response = {
             'message_id': message_id,
             'is_flagged': message.is_flagged,
             'status': message.moderation_status,
             'notes': moderation_notes
         }
+
+        channel_layer = get_channel_layer()
+        room_group_name = f"chat_{slugify(message.room.name)}" 
+
+        print(f"Sending moderation update to room group: {room_group_name}")
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'moderation_update',
+                'message_id': message_id,
+                'status': message.moderation_status,
+                'notes': moderation_notes,
+            }
+        )
+
+        return response
 
     except Message.DoesNotExist:
         return f"Message with id {message_id} not found"

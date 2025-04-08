@@ -34,7 +34,12 @@ def room(request, room_name):
         if not room:
             return redirect('index')
     
-    messages = Message.objects.filter(room=room).order_by('created_at')[:50]
+    messages = Message.objects.filter(
+        room=room
+    ).exclude(
+        moderation_status__in=['flagged', 'pending']
+    ).order_by('created_at')[:50]
+
     return render(request, 'chat/room.html', {
         'room': room,
         'messages': messages
