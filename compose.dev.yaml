@@ -11,6 +11,24 @@ services:
     volumes:
       - ./app:/app
     command: python manage.py runserver 0.0.0.0:8000
+    depends_on:
+      - migrate
+
+  migrate:
+    build:
+      context: ./app
+      dockerfile: Dockerfile.dev
+    restart: on-failure
+    environment:
+      - DJANGO_SETTINGS_MODULE=chat_project.settings
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+      - DJANGO_SECRET_KEY
+      - DEBUG=1
+    volumes:
+      - ./app:/app
+    depends_on:
+      - db
+    command: python manage.py migrate
 
   worker:
     extends:
@@ -31,16 +49,12 @@ services:
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
 
   broker:
     extends:
       file: compose.yaml
       service: broker
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - broker_data:/data
 
