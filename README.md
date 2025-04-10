@@ -17,7 +17,8 @@ A modern real-time chat application built with Django, Channels, and WebSocket t
 - Django Channels - WebSocket handling
 - Celery - Background task processing
 - Docker - Containerization
-- PostgreSQL - Database (configured in Docker)
+- PostgreSQL - Database
+- Redis - Websocket and Message Queue broker
 
 ## Getting Started
 
